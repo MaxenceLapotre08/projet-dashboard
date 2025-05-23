@@ -94,11 +94,11 @@ def display_site_kpis(data: pd.DataFrame) -> None:
 
 def display_google_ads_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs de Google Ads."""
-    total_budget = safe_sum(data, 'google_budget')
-    total_impressions = safe_sum(data, 'google_impressions')
-    total_clicks = safe_sum(data, 'google_clics')
-    total_forms = safe_sum(data, 'google_formulaires')
-    total_calls = safe_sum(data, 'google_appels')
+    total_budget = safe_sum(data, 'google_ads_budget')
+    total_impressions = safe_sum(data, 'google_ads_impressions')
+    total_clicks = safe_sum(data, 'google_ads_clics')
+    total_forms = safe_sum(data, 'google_ads_formulaires')
+    total_calls = safe_sum(data, 'google_ads_appels')
     total_contacts = total_forms + total_calls  # Les contacts sont la somme des appels et formulaires
     
     # Calcul des taux réels
@@ -125,11 +125,11 @@ def display_google_ads_kpis(data: pd.DataFrame) -> None:
 
 def display_meta_ads_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs de Meta Ads."""
-    total_budget = safe_sum(data, 'meta_budget')
-    total_impressions = safe_sum(data, 'meta_impressions')
-    total_clicks = safe_sum(data, 'meta_clics')
-    total_forms = safe_sum(data, 'meta_formulaires')
-    total_calls = safe_sum(data, 'meta_appels')
+    total_budget = safe_sum(data, 'meta_ads_budget')
+    total_impressions = safe_sum(data, 'meta_ads_impressions')
+    total_clicks = safe_sum(data, 'meta_ads_clics')
+    total_forms = safe_sum(data, 'meta_ads_formulaires')
+    total_calls = safe_sum(data, 'meta_ads_appels')
     total_contacts = total_forms + total_calls  # Les contacts sont la somme des appels et formulaires
     
     # Calcul des taux réels
@@ -193,50 +193,50 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
     metric_mapping = {
         'impressions': {
             'site': 'site_impressions',
-            'google_ads': 'google_impressions',
-            'meta_ads': 'meta_impressions',
+            'google_ads': 'google_ads_impressions',
+            'meta_ads': 'meta_ads_impressions',
             'gmb': 'gmb_impressions'
         },
         'clics': {
             'site': 'site_visites',
-            'google_ads': 'google_clics',
-            'meta_ads': 'meta_clics',
+            'google_ads': 'google_ads_clics',
+            'meta_ads': 'meta_ads_clics',
             'gmb': 'gmb_clics_site'
         },
         'ctr': {
             'site': 'site_ctr',
-            'google_ads': 'google_ctr',
-            'meta_ads': 'meta_ctr',
+            'google_ads': 'google_ads_ctr',
+            'meta_ads': 'meta_ads_ctr',
             'gmb': 'gmb_taux_interaction'
         },
         'taux_conversion': {
             'site': 'site_taux_conversion',
-            'google_ads': 'google_taux_conversion',
-            'meta_ads': 'meta_taux_conversion',
+            'google_ads': 'google_ads_taux_conversion',
+            'meta_ads': 'meta_ads_taux_conversion',
             'gmb': 'gmb_taux_appel'
         },
         'cout_contact': {
             'site': 'site_cout_contact',
-            'google_ads': 'google_cout_contact',
-            'meta_ads': 'meta_cout_contact',
+            'google_ads': 'google_ads_cout_contact',
+            'meta_ads': 'meta_ads_cout_contact',
             'gmb': None
         },
         'appels': {
-            'site': 'site_appels',
-            'google_ads': 'google_appels',
-            'meta_ads': 'meta_appels',
+            'site': 'site_nombre_appels',
+            'google_ads': 'google_ads_appels',
+            'meta_ads': 'meta_ads_appels',
             'gmb': 'gmb_appels'
         },
         'formulaires': {
             'site': 'site_formulaires',
-            'google_ads': 'google_formulaires',
-            'meta_ads': 'meta_formulaires',
+            'google_ads': 'google_ads_formulaires',
+            'meta_ads': 'meta_ads_formulaires',
             'gmb': None
         },
         'contacts': {
             'site': 'site_contacts',
-            'google_ads': 'google_contacts',
-            'meta_ads': 'meta_contacts',
+            'google_ads': 'google_ads_contacts',
+            'meta_ads': 'meta_ads_contacts',
             'gmb': None
         }
     }

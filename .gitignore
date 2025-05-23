@@ -1,25 +1,80 @@
-# Node modules
-node_modules/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Next.js build output
-.next/
-out/
+# Environnement virtuel
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
 
-# Environnements et secrets
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Fichiers de données
+*.xlsx
+*.xls
+*.csv
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+log/
+
+# Fichiers de configuration locaux
+config.local.py
 .env.local
 .env.*.local
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Fichiers de cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Système
-.DS_Store
+# Fichiers temporaires
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
 
-# IDEs
-.vscode/
-.idea/
+# Fichiers spécifiques au projet
+data/
+uploads/
+downloads/
+temp/
 
-# Typescript
-*.tsbuildinfo
+# Fichiers de déploiement
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so 

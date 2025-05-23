@@ -222,7 +222,7 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
             'gmb': None
         },
         'appels': {
-            'site': 'site_nombre_appels',
+            'site': 'site_appels',
             'google_ads': 'google_appels',
             'meta_ads': 'meta_appels',
             'gmb': 'gmb_appels'
@@ -237,7 +237,7 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
             'site': 'site_contacts',
             'google_ads': 'google_contacts',
             'meta_ads': 'meta_contacts',
-            'gmb': 'gmb_reservations'
+            'gmb': None
         }
     }
     
@@ -246,30 +246,38 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
         return
     
     # Préparation des données pour le graphique
-    channels = []
-    values = []
+    canal_data = []
+    for canal, col_name in metric_mapping[metric].items():
+        if col_name is not None:
+            value = safe_sum(data, col_name)
+            if metric in ['ctr', 'taux_conversion']:
+                value = value * 100  # Conversion en pourcentage
+            canal_data.append({
+                'Canal': canal.replace('_', ' ').title(),
+                'Valeur': value
+            })
     
-    for channel, column in metric_mapping[metric].items():
-        if column is not None:
-            value = safe_sum(data, column)
-            channels.append(channel.replace('_', ' ').title())
-            values.append(value)
+    if not canal_data:
+        st.error("Aucune donnée disponible pour cette métrique")
+        return
     
     # Création du graphique
-    fig = go.Figure(data=[
-        go.Bar(
-            x=channels,
-            y=values,
-            text=[format_number(v) if metric != 'cout_contact' else format_currency(v) for v in values],
-            textposition='auto',
-        )
-    ])
-    
-    fig.update_layout(
-        title=f"Comparaison {metric.replace('_', ' ').title()} par canal",
-        xaxis_title="Canal",
-        yaxis_title=metric.replace('_', ' ').title(),
-        showlegend=False
+    fig = px.bar(
+        pd.DataFrame(canal_data),
+        x='Canal',
+        y='Valeur',
+        title=f"Comparaison des {metric.replace('_', ' ').title()} par canal",
+        labels={'Valeur': metric.replace('_', ' ').title()}
     )
     
+    # Personnalisation du graphique
+    fig.update_layout(
+        showlegend=False,
+        xaxis_title="",
+        yaxis_title="",
+        title_x=0.5,
+        title_y=0.95
+    )
+    
+    # Affichage du graphique
     st.plotly_chart(fig, use_container_width=True) 

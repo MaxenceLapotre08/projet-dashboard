@@ -12,6 +12,8 @@ from components.visualizations import (
     format_percentage,
     clean_numeric_value
 )
+from datetime import datetime, timedelta
+import plotly.graph_objects as go
 
 # Configuration de la page
 st.set_page_config(
@@ -33,6 +35,25 @@ data = load_data()
 
 # Filtres
 st.sidebar.header("Filtres")
+
+# Filtre par date
+dates_disponibles = sorted(data['date'].unique().tolist())
+date_debut = st.sidebar.date_input(
+    "Date de début",
+    value=datetime.strptime(dates_disponibles[0], '%Y-%m').date(),
+    min_value=datetime.strptime(dates_disponibles[0], '%Y-%m').date(),
+    max_value=datetime.strptime(dates_disponibles[-1], '%Y-%m').date()
+)
+date_fin = st.sidebar.date_input(
+    "Date de fin",
+    value=datetime.strptime(dates_disponibles[-1], '%Y-%m').date(),
+    min_value=datetime.strptime(dates_disponibles[0], '%Y-%m').date(),
+    max_value=datetime.strptime(dates_disponibles[-1], '%Y-%m').date()
+)
+
+# Convertir les dates en format YYYY-MM
+date_debut_str = date_debut.strftime('%Y-%m')
+date_fin_str = date_fin.strftime('%Y-%m')
 
 # Liste des clients pour l'autocomplétion
 liste_clients = sorted(data['Client'].unique().tolist())
@@ -62,6 +83,13 @@ canal_selectionne = st.sidebar.selectbox("Canal", canaux)
 
 # Application des filtres
 data_filtree = data.copy()
+
+# Filtre par date pour les KPIs
+data_filtree = data_filtree[
+    (data_filtree['date'] >= date_debut_str) & 
+    (data_filtree['date'] <= date_fin_str)
+]
+
 if activite_selectionnee != "Tous":
     data_filtree = data_filtree[data_filtree['Activité'] == activite_selectionnee]
 if localite_selectionnee != "Tous":
@@ -93,30 +121,214 @@ if canal_selectionne == "Tous":
     )
     display_canal_comparison(data_filtree, metric)
 
+    # Graphique d'évolution des KPIs uniquement si un client est sélectionné
+    if client_search:
+        st.header("📈 Évolution des KPIs")
+        
+        # Sélection de plusieurs canaux pour le graphique d'évolution
+        canaux_evolution = st.multiselect(
+            "Sélectionnez un ou plusieurs canaux pour l'évolution",
+            ["Site", "Google Ads", "Meta Ads", "GMB"],
+            default=["Site"]
+        )
+        
+        # Définition des KPIs disponibles par canal
+        kpis_disponibles = {
+            'Site': {
+                'Impressions': 'site_impressions',
+                'Visites': 'site_visites',
+                'CTR': 'site_ctr',
+                'Taux de Rebond': 'site_taux_rebond',
+                'Durée Moyenne': 'site_duree_moyenne',
+                'Position Moyenne': 'site_position_moyenne',
+                'Appels': 'site_nombre_appels',
+                'Formulaires': 'site_formulaires',
+                'Contacts': 'site_contacts',
+                'Coût Contact': 'site_cout_contact'
+            },
+            'Google Ads': {
+                'Budget': 'google_budget',
+                'Impressions': 'google_impressions',
+                'Clics': 'google_clics',
+                'CTR': 'google_ctr',
+                'Taux de Conversion': 'google_taux_conversion',
+                'Appels': 'google_appels',
+                'Formulaires': 'google_formulaires',
+                'Contacts': 'google_contacts',
+                'Coût Contact': 'google_cout_contact',
+                'Quality Score': 'google_quality-score'
+            },
+            'Meta Ads': {
+                'Budget': 'meta_budget',
+                'Impressions': 'meta_impressions',
+                'Clics': 'meta_clics',
+                'CTR': 'meta_ctr',
+                'Taux de Conversion': 'meta_taux_conversion',
+                'Appels': 'meta_appels',
+                'Formulaires': 'meta_formulaires',
+                'Contacts': 'meta_contacts',
+                'Coût Contact': 'meta_cout_contact',
+                'Relevance Score': 'meta_relevance_score'
+            },
+            'GMB': {
+                'Vues': 'gmb_impressions',
+                'Clics': 'gmb_clics_site',
+                'Itinéraires': 'gmb_demande_d_itineraire',
+                'Appels': 'gmb_appels',
+                'Réservations': 'gmb_reservations',
+                'Score': 'gmb_score_avis',
+                'Nombre Avis': 'gmb_nombre_avis'
+            }
+        }
+        
+        # Sélection des KPIs à afficher (communs à tous les canaux sélectionnés)
+        kpis_communs = set.intersection(*[set(kpis_disponibles[canal].keys()) for canal in canaux_evolution]) if canaux_evolution else set()
+        kpis_selectionnes = st.multiselect(
+            "Sélectionnez les KPIs à afficher",
+            options=sorted(list(kpis_communs)),
+            default=list(kpis_communs)[:3] if kpis_communs else []
+        )
+        
+        if kpis_selectionnes and canaux_evolution:
+            # Filtrer les données pour le client sélectionné et créer une copie explicite
+            data_client = data[data['Client'] == client_search].loc[:].copy()
+            # Nettoyer les données
+            for col in data_client.columns:
+                if col not in ['Client', 'Activité', 'Localité', 'date']:
+                    data_client.loc[:, col] = pd.to_numeric(data_client[col], errors='coerce').fillna(0)
+            # Créer le graphique
+            fig = go.Figure()
+            # Trier les données par date
+            data_triee = data_client.sort_values('date')
+            for canal in canaux_evolution:
+                for kpi in kpis_selectionnes:
+                    colonne = kpis_disponibles[canal][kpi]
+                    if colonne in data_triee.columns:
+                        if 'ctr' in colonne or 'taux' in colonne or 'score' in colonne:
+                            valeurs = data_triee[colonne] * 100
+                            suffixe = '%'
+                        elif 'budget' in colonne or 'cout' in colonne:
+                            valeurs = data_triee[colonne]
+                            suffixe = '€'
+                        elif 'duree' in colonne:
+                            valeurs = data_triee[colonne] / 60
+                            suffixe = ' min'
+                        else:
+                            valeurs = data_triee[colonne]
+                            suffixe = ''
+                        fig.add_trace(go.Scatter(
+                            x=data_triee['date'],
+                            y=valeurs,
+                            name=f"{kpi} - {canal}{' ' + suffixe if suffixe else ''}",
+                            mode='lines+markers'
+                        ))
+            fig.update_layout(
+                title=f"Évolution des KPIs",
+                xaxis_title="Date",
+                yaxis_title="Valeur",
+                hovermode='x unified',
+                showlegend=True,
+                height=600
+            )
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
+    else:
+        st.info("Veuillez sélectionner un client pour afficher l'évolution des KPIs.")
+
 # Tableau des clients avec leurs KPIs
 st.header("👥 Tableau des Clients")
 
 # Préparation des données pour le tableau
 def prepare_client_data(df, canal_selectionne):
+    # Filtrer les données par date
+    df = df[(df['date'] >= date_debut_str) & (df['date'] <= date_fin_str)]
+    
+    # Nettoyer les données
+    for col in df.columns:
+        if col not in ['Client', 'Activité', 'Localité', 'date']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    
+    # Si un client est sélectionné, ne pas agréger les données
+    if client_search:
+        df_agg = df
+    else:
+        # Agréger les données par client
+        df_agg = df.groupby(['Client', 'Activité', 'Localité']).agg({
+            # Site
+            'site_impressions': 'sum',
+            'site_visites': 'sum',
+            'site_ctr': 'mean',
+            'site_taux_rebond': 'mean',
+            'site_duree_moyenne': 'mean',
+            'site_position_moyenne': 'mean',
+            'site_nombre_appels': 'sum',
+            'site_formulaires': 'sum',
+            'site_cout_contact': 'mean',
+            # Google Ads
+            'google_budget': 'sum',
+            'google_impressions': 'sum',
+            'google_clics': 'sum',
+            'google_ctr': 'mean',
+            'google_taux_conversion': 'mean',
+            'google_appels': 'sum',
+            'google_formulaires': 'sum',
+            'google_contacts': 'sum',
+            'google_cout_contact': 'mean',
+            'google_quality-score': 'mean',
+            'google_durée_moyenne_visite': 'mean',
+            'google_taux_de_rebond': 'mean',
+            # Meta Ads
+            'meta_budget': 'sum',
+            'meta_impressions': 'sum',
+            'meta_clics': 'sum',
+            'meta_ctr': 'mean',
+            'meta_taux_conversion': 'mean',
+            'meta_appels': 'sum',
+            'meta_formulaires': 'sum',
+            'meta_contacts': 'sum',
+            'meta_cout_contact': 'mean',
+            'meta_relevance_score': 'mean',
+            'meta_durée_moyenne_visite': 'mean',
+            'meta_taux_de_rebond': 'mean',
+            'meta_taux_interaction': 'mean',
+            # GMB
+            'gmb_impressions': 'sum',
+            'gmb_clics_site': 'sum',
+            'gmb_demande_d_itineraire': 'sum',
+            'gmb_appels': 'sum',
+            'gmb_reservations': 'sum',
+            'gmb_score_avis': 'mean',
+            'gmb_nombre_avis': 'sum',
+            'gmb_taux_d_interaction': 'mean',
+            'gmb_taux_d_appel': 'mean',
+            'gmb_taux_de_reservation': 'mean',
+            'gmb_vues_meta_adsps_mobile': 'sum',
+            'gmb_vues_meta_adsps_desktop': 'sum',
+            'gmb_vues_recherche_google_mobile': 'sum',
+            'gmb_vues_recherche_google_desktop': 'sum'
+        }).reset_index()
+    
+    # Remplacer les valeurs NaN par 0
+    df_agg = df_agg.fillna(0)
+    
     client_data = []
     
     # Définition des colonnes par canal
     colonnes_par_canal = {
         'Site': [
-            'Client', 'Activité', 'Localité',
+            'Client', 'Activité', 'Localité', 'date' if client_search else None,
             'Impressions Site', 'Visites Site', 'CTR Site', 'Taux Rebond Site',
             'Durée Moyenne Site', 'Position Moyenne Site', 'Appels Site', 'Formulaires Site',
             'Contacts Site', 'Coût Contact Site', 'Taux Conversion Site'
         ],
         'Google Ads': [
-            'Client', 'Activité', 'Localité',
+            'Client', 'Activité', 'Localité', 'date' if client_search else None,
             'Budget Google', 'Impressions Google', 'Clics Google',
             'CTR Google', 'Taux Conv Google', 'Appels Google',
             'Formulaires Google', 'Contacts Google', 'Coût Contact Google',
             'Quality Score Google', 'Durée Moyenne Google', 'Taux Rebond Google'
         ],
         'Meta Ads': [
-            'Client', 'Activité', 'Localité',
+            'Client', 'Activité', 'Localité', 'date' if client_search else None,
             'Budget Meta', 'Impressions Meta', 'Clics Meta',
             'CTR Meta', 'Taux Conv Meta', 'Appels Meta',
             'Formulaires Meta', 'Contacts Meta', 'Coût Contact Meta',
@@ -124,7 +336,7 @@ def prepare_client_data(df, canal_selectionne):
             'Taux Interaction Meta'
         ],
         'GMB': [
-            'Client', 'Activité', 'Localité',
+            'Client', 'Activité', 'Localité', 'date' if client_search else None,
             'Vues GMB', 'Clics GMB', 'Itinéraires GMB',
             'Appels GMB', 'Réservations GMB', 'Score GMB',
             'Nombre Avis GMB', 'Taux Interaction GMB', 'Taux Appel GMB',
@@ -137,25 +349,41 @@ def prepare_client_data(df, canal_selectionne):
     if canal_selectionne == "Tous":
         colonnes_a_afficher = None  # Afficher toutes les colonnes
     else:
-        colonnes_a_afficher = colonnes_par_canal[canal_selectionne]
+        colonnes_a_afficher = [col for col in colonnes_par_canal[canal_selectionne] if col is not None]
     
-    for _, row in df.iterrows():
+    for _, row in df_agg.iterrows():
+        # Convertir la date en format lettré si un client est sélectionné
+        if client_search:
+            date_obj = datetime.strptime(row['date'], '%Y-%m')
+            date_formatted = date_obj.strftime('%B %Y').capitalize()
+        
+        # Calculer le taux de conversion pour le site
+        total_contacts = clean_numeric_value(row['site_nombre_appels']) + clean_numeric_value(row['site_formulaires'])
+        total_visits = clean_numeric_value(row['site_visites'])
+        taux_conversion = (total_contacts / total_visits * 100) if total_visits > 0 else 0
+        
+        # Calculer le CTR site
+        impressions = clean_numeric_value(row['site_impressions'])
+        clics = clean_numeric_value(row['site_visites'])
+        ctr_site = (clics / impressions * 100) if impressions > 0 else 0
+        
         client = {
             'Client': row['Client'],
             'Activité': row['Activité'],
             'Localité': row['Localité'],
+            'date': date_formatted if client_search else None,
             # Site
-            'Impressions Site': format_number(clean_numeric_value(row['site_impressions'])),
-            'Visites Site': format_number(clean_numeric_value(row['site_visites'])),
-            'CTR Site': format_percentage(clean_numeric_value(row['site_ctr']) * 100),
+            'Impressions Site': format_number(impressions),
+            'Visites Site': format_number(clics),
+            'CTR Site': format_percentage(ctr_site),
             'Taux Rebond Site': format_percentage(clean_numeric_value(row['site_taux_rebond']) * 100),
             'Durée Moyenne Site': f"{clean_numeric_value(row['site_duree_moyenne'])/60:.1f} min",
             'Position Moyenne Site': f"{clean_numeric_value(row['site_position_moyenne']):.1f}",
             'Appels Site': format_number(clean_numeric_value(row['site_nombre_appels'])),
             'Formulaires Site': format_number(clean_numeric_value(row['site_formulaires'])),
-            'Contacts Site': format_number(clean_numeric_value(row['site_contacts'])),
+            'Contacts Site': format_number(total_contacts),
             'Coût Contact Site': format_currency(clean_numeric_value(row['site_cout_contact'])),
-            'Taux Conversion Site': format_percentage(clean_numeric_value(row['site_taux_conversion']) * 100),
+            'Taux Conversion Site': format_percentage(taux_conversion),
             # Google Ads
             'Budget Google': format_currency(clean_numeric_value(row['google_budget'])),
             'Impressions Google': format_number(clean_numeric_value(row['google_impressions'])),
@@ -207,14 +435,5 @@ def prepare_client_data(df, canal_selectionne):
     return df_result
 
 # Affichage du tableau
-client_table = prepare_client_data(data_filtree, canal_selectionne)
-st.dataframe(client_table, use_container_width=True)
-
-# Si un client est sélectionné via la recherche, afficher un lien vers son dashboard
-if client_search and len(data) == 1:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown(f"### Dashboard de {data.iloc[0]['Client']}")
-    if st.sidebar.button("Voir le dashboard détaillé"):
-        # Ici, vous pouvez ajouter la logique pour afficher le dashboard détaillé du client
-        st.session_state['selected_client'] = data.iloc[0]['Client']
-        st.experimental_rerun() 
+client_table = prepare_client_data(data, canal_selectionne)
+st.dataframe(client_table, use_container_width=True) 

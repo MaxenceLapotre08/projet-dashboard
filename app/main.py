@@ -156,7 +156,7 @@ if canal_selectionne == "Tous":
                 'Formulaires': 'google_ads_formulaires',
                 'Contacts': 'google_ads_contacts',
                 'Coût Contact': 'google_ads_cout_contact',
-                'Quality Score': 'google_ads_quality-score'
+                'Quality Score': 'google_ads_quality_score'
             },
             'Meta Ads': {
                 'Budget': 'meta_ads_budget',
@@ -273,7 +273,7 @@ def prepare_client_data(df, canal_selectionne):
             'google_ads_formulaires': 'sum',
             'google_ads_contacts': 'sum',
             'google_ads_cout_contact': 'mean',
-            'google_ads_quality-score': 'mean',
+            'google_ads_quality_score': 'mean',
             'google_ads_durée_moyenne_visite': 'mean',
             'google_ads_taux_de_rebond': 'mean',
             # Meta Ads
@@ -394,7 +394,7 @@ def prepare_client_data(df, canal_selectionne):
             'Formulaires Google': format_number(clean_numeric_value(row['google_ads_formulaires'])),
             'Contacts Google': format_number(clean_numeric_value(row['google_ads_contacts'])),
             'Coût Contact Google': format_currency(clean_numeric_value(row['google_ads_cout_contact'])),
-            'Quality Score Google': f"{clean_numeric_value(row['google_ads_quality-score']):.1f}/10",
+            'Quality Score Google': f"{clean_numeric_value(row['google_ads_quality_score']):.1f}/100",
             'Durée Moyenne Google': f"{clean_numeric_value(row['google_ads_durée_moyenne_visite'])/60:.1f} min",
             'Taux Rebond Google': format_percentage(clean_numeric_value(row['google_ads_taux_de_rebond']) * 100),
             # Meta Ads

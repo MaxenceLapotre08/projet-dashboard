@@ -16,6 +16,17 @@ class DataLoader:
         self.json_path = Path("data/data.json")
         self._data = None
 
+    def _convert_value(self, value):
+        """Convertit une valeur en nombre, en gérant le format français (virgule → point)."""
+        if isinstance(value, str):
+            # Remplacer la virgule par un point pour les nombres décimaux
+            value = value.replace(',', '.')
+            try:
+                return float(value)
+            except ValueError:
+                return value
+        return value
+
     def _load_json_data(self):
         """Charge les données depuis le fichier JSON."""
         if not self.json_path.exists():
@@ -36,7 +47,13 @@ class DataLoader:
                 for canal in ['site', 'google_ads', 'meta_ads', 'gmb']:
                     if canal in hist:
                         for k, v in hist[canal].items():
-                            row[f"{canal}_{k}"] = v
+                            # Correction des noms de colonnes pour Quality Score et Relevance Score
+                            if canal == 'google_ads' and k == 'quality-score':
+                                row['google_ads_quality_score'] = self._convert_value(v)
+                            elif canal == 'meta_ads' and k == 'relevance_score':
+                                row['meta_ads_relevance_score'] = self._convert_value(v)
+                            else:
+                                row[f"{canal}_{k}"] = self._convert_value(v)
                 rows.append(row)
         return pd.DataFrame(rows)
 

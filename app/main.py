@@ -10,7 +10,8 @@ from components.visualizations import (
     format_number,
     format_currency,
     format_percentage,
-    clean_numeric_value
+    clean_numeric_value,
+    display_performance_analysis
 )
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
@@ -111,6 +112,9 @@ if canal_selectionne in ["Tous", "Meta Ads"]:
 if canal_selectionne in ["Tous", "GMB"]:
     st.header("📍 Google My Business")
     display_gmb_kpis(data_filtree)
+
+# Affichage de l'analyse de performance
+display_performance_analysis(data_filtree)
 
 # Comparaison des canaux
 if canal_selectionne == "Tous":

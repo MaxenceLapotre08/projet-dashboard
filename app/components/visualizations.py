@@ -81,15 +81,21 @@ def display_kpis_grid(data: pd.DataFrame, kpis: dict, title: str) -> None:
                 st.metric(kpi_name, format_func(value))
             else:
                 # Si c'est un KPI direct
-                value = safe_sum(data, kpi_data) if 'total' in kpi_name.lower() else safe_mean(data, kpi_data)
+                value = safe_sum(data, kpi_name) if 'total' in kpi_name.lower() else safe_mean(data, kpi_name)
                 format_func = format_currency if 'budget' in kpi_name.lower() or 'cout' in kpi_name.lower() else format_number
                 st.metric(kpi_name, format_func(value))
 
 def display_site_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs du site internet."""
     kpis = {
-        'Impressions': 'site_impressions',
-        'Visites': 'site_visites',
+        'Impressions': {
+            'value': lambda df: safe_sum(df, 'site_impressions'),
+            'format': format_number
+        },
+        'Visites': {
+            'value': lambda df: safe_sum(df, 'site_visites'),
+            'format': format_number
+        },
         'CTR': {
             'value': lambda df: (safe_sum(df, 'site_visites') / safe_sum(df, 'site_impressions') * 100) if safe_sum(df, 'site_impressions') > 0 else 0,
             'format': format_percentage
@@ -106,22 +112,40 @@ def display_site_kpis(data: pd.DataFrame) -> None:
             'value': lambda df: safe_mean(df, 'site_position_moyenne'),
             'format': lambda x: f"{x:.1f}"
         },
-        'Appels': 'site_nombre_appels',
-        'Formulaires': 'site_formulaires',
+        'Appels': {
+            'value': lambda df: safe_sum(df, 'site_nombre_appels'),
+            'format': format_number
+        },
+        'Formulaires': {
+            'value': lambda df: safe_sum(df, 'site_formulaires'),
+            'format': format_number
+        },
         'Contacts': {
             'value': lambda df: safe_sum(df, 'site_nombre_appels') + safe_sum(df, 'site_formulaires'),
             'format': format_number
         },
-        'Coût Contact': 'site_cout_contact'
+        'Coût Contact': {
+            'value': lambda df: safe_mean(df, 'site_cout_contact'),
+            'format': format_currency
+        }
     }
     display_kpis_grid(data, kpis, "📱 Site Internet")
 
 def display_google_ads_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs de Google Ads."""
     kpis = {
-        'Budget': 'google_ads_budget',
-        'Impressions': 'google_ads_impressions',
-        'Clics': 'google_ads_clics',
+        'Budget': {
+            'value': lambda df: safe_sum(df, 'google_ads_budget'),
+            'format': format_currency
+        },
+        'Impressions': {
+            'value': lambda df: safe_sum(df, 'google_ads_impressions'),
+            'format': format_number
+        },
+        'Clics': {
+            'value': lambda df: safe_sum(df, 'google_ads_clics'),
+            'format': format_number
+        },
         'CTR': {
             'value': lambda df: (safe_sum(df, 'google_ads_clics') / safe_sum(df, 'google_ads_impressions') * 100) if safe_sum(df, 'google_ads_impressions') > 0 else 0,
             'format': format_percentage
@@ -130,10 +154,22 @@ def display_google_ads_kpis(data: pd.DataFrame) -> None:
             'value': lambda df: (safe_sum(df, 'google_ads_contacts') / safe_sum(df, 'google_ads_clics') * 100) if safe_sum(df, 'google_ads_clics') > 0 else 0,
             'format': format_percentage
         },
-        'Appels': 'google_ads_appels',
-        'Formulaires': 'google_ads_formulaires',
-        'Contacts': 'google_ads_contacts',
-        'Coût Contact': 'google_ads_cout_contact',
+        'Appels': {
+            'value': lambda df: safe_sum(df, 'google_ads_appels'),
+            'format': format_number
+        },
+        'Formulaires': {
+            'value': lambda df: safe_sum(df, 'google_ads_formulaires'),
+            'format': format_number
+        },
+        'Contacts': {
+            'value': lambda df: safe_sum(df, 'google_ads_contacts'),
+            'format': format_number
+        },
+        'Coût Contact': {
+            'value': lambda df: safe_mean(df, 'google_ads_cout_contact'),
+            'format': format_currency
+        },
         'Quality Score': {
             'value': lambda df: safe_mean(df, 'google_ads_quality_score'),
             'format': lambda x: f"{x:.1f}/100"
@@ -152,9 +188,18 @@ def display_google_ads_kpis(data: pd.DataFrame) -> None:
 def display_meta_ads_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs de Meta Ads."""
     kpis = {
-        'Budget': 'meta_ads_budget',
-        'Impressions': 'meta_ads_impressions',
-        'Clics': 'meta_ads_clics',
+        'Budget': {
+            'value': lambda df: safe_sum(df, 'meta_ads_budget'),
+            'format': format_currency
+        },
+        'Impressions': {
+            'value': lambda df: safe_sum(df, 'meta_ads_impressions'),
+            'format': format_number
+        },
+        'Clics': {
+            'value': lambda df: safe_sum(df, 'meta_ads_clics'),
+            'format': format_number
+        },
         'CTR': {
             'value': lambda df: (safe_sum(df, 'meta_ads_clics') / safe_sum(df, 'meta_ads_impressions') * 100) if safe_sum(df, 'meta_ads_impressions') > 0 else 0,
             'format': format_percentage
@@ -163,10 +208,22 @@ def display_meta_ads_kpis(data: pd.DataFrame) -> None:
             'value': lambda df: (safe_sum(df, 'meta_ads_contacts') / safe_sum(df, 'meta_ads_clics') * 100) if safe_sum(df, 'meta_ads_clics') > 0 else 0,
             'format': format_percentage
         },
-        'Appels': 'meta_ads_appels',
-        'Formulaires': 'meta_ads_formulaires',
-        'Contacts': 'meta_ads_contacts',
-        'Coût Contact': 'meta_ads_cout_contact',
+        'Appels': {
+            'value': lambda df: safe_sum(df, 'meta_ads_appels'),
+            'format': format_number
+        },
+        'Formulaires': {
+            'value': lambda df: safe_sum(df, 'meta_ads_formulaires'),
+            'format': format_number
+        },
+        'Contacts': {
+            'value': lambda df: safe_sum(df, 'meta_ads_contacts'),
+            'format': format_number
+        },
+        'Coût Contact': {
+            'value': lambda df: safe_mean(df, 'meta_ads_cout_contact'),
+            'format': format_currency
+        },
         'Relevance Score': {
             'value': lambda df: safe_mean(df, 'meta_ads_relevance_score'),
             'format': lambda x: f"{x:.1f}/10"
@@ -189,16 +246,34 @@ def display_meta_ads_kpis(data: pd.DataFrame) -> None:
 def display_gmb_kpis(data: pd.DataFrame) -> None:
     """Affiche les KPIs de Google My Business."""
     kpis = {
-        'Vues': 'gmb_impressions',
-        'Clics Site': 'gmb_clics_site',
-        'Itinéraires': 'gmb_demande_d_itineraire',
-        'Appels': 'gmb_appels',
-        'Réservations': 'gmb_reservations',
+        'Vues': {
+            'value': lambda df: safe_sum(df, 'gmb_impressions'),
+            'format': format_number
+        },
+        'Clics Site': {
+            'value': lambda df: safe_sum(df, 'gmb_clics_site'),
+            'format': format_number
+        },
+        'Itinéraires': {
+            'value': lambda df: safe_sum(df, 'gmb_demande_d_itineraire'),
+            'format': format_number
+        },
+        'Appels': {
+            'value': lambda df: safe_sum(df, 'gmb_appels'),
+            'format': format_number
+        },
+        'Réservations': {
+            'value': lambda df: safe_sum(df, 'gmb_reservations'),
+            'format': format_number
+        },
         'Score Avis': {
             'value': lambda df: safe_mean(df, 'gmb_score_avis'),
             'format': lambda x: f"{x:.1f}/5"
         },
-        'Nombre Avis': 'gmb_nombre_avis',
+        'Nombre Avis': {
+            'value': lambda df: safe_sum(df, 'gmb_nombre_avis'),
+            'format': format_number
+        },
         'Taux d\'Interaction': {
             'value': lambda df: safe_mean(df, 'gmb_taux_d_interaction') * 100,
             'format': format_percentage
@@ -211,15 +286,27 @@ def display_gmb_kpis(data: pd.DataFrame) -> None:
             'value': lambda df: safe_mean(df, 'gmb_taux_de_reservation') * 100,
             'format': format_percentage
         },
-        'Vues Meta Mobile': 'gmb_vues_meta_adsps_mobile',
-        'Vues Meta Desktop': 'gmb_vues_meta_adsps_desktop',
-        'Vues Google Mobile': 'gmb_vues_recherche_google_mobile',
-        'Vues Google Desktop': 'gmb_vues_recherche_google_desktop'
+        'Vues Meta Mobile': {
+            'value': lambda df: safe_sum(df, 'gmb_vues_meta_adsps_mobile'),
+            'format': format_number
+        },
+        'Vues Meta Desktop': {
+            'value': lambda df: safe_sum(df, 'gmb_vues_meta_adsps_desktop'),
+            'format': format_number
+        },
+        'Vues Google Mobile': {
+            'value': lambda df: safe_sum(df, 'gmb_vues_recherche_google_mobile'),
+            'format': format_number
+        },
+        'Vues Google Desktop': {
+            'value': lambda df: safe_sum(df, 'gmb_vues_recherche_google_desktop'),
+            'format': format_number
+        }
     }
     display_kpis_grid(data, kpis, "📍 Google My Business")
 
 def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
-    """Affiche une comparaison des métriques entre les canaux."""
+    """Affiche une comparaison des métriques entre les produits."""
     metric_mapping = {
         'impressions': {
             'site': 'site_impressions',
@@ -234,16 +321,16 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
             'gmb': 'gmb_clics_site'
         },
         'ctr': {
-            'site': 'site_ctr',
-            'google_ads': 'google_ads_ctr',
-            'meta_ads': 'meta_ads_ctr',
-            'gmb': 'gmb_taux_interaction'
+            'site': ('site_visites', 'site_impressions'),  # (clics, impressions)
+            'google_ads': ('google_ads_clics', 'google_ads_impressions'),
+            'meta_ads': ('meta_ads_clics', 'meta_ads_impressions'),
+            'gmb': ('gmb_clics_site', 'gmb_impressions')
         },
         'taux_conversion': {
-            'site': 'site_taux_conversion',
-            'google_ads': 'google_ads_taux_conversion',
-            'meta_ads': 'meta_ads_taux_conversion',
-            'gmb': 'gmb_taux_appel'
+            'site': ('site_contacts', 'site_visites'),  # (contacts, visites)
+            'google_ads': ('google_ads_contacts', 'google_ads_clics'),
+            'meta_ads': ('meta_ads_contacts', 'meta_ads_clics'),
+            'gmb': ('gmb_appels', 'gmb_impressions')
         },
         'cout_contact': {
             'site': 'site_cout_contact',
@@ -276,27 +363,36 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
         return
     
     # Préparation des données pour le graphique
-    canal_data = []
-    for canal, col_name in metric_mapping[metric].items():
-        if col_name is not None:
-            value = safe_sum(data, col_name)
+    product_data = []
+    for product, col_info in metric_mapping[metric].items():
+        if col_info is not None:
             if metric in ['ctr', 'taux_conversion']:
-                value = value * 100  # Conversion en pourcentage
-            canal_data.append({
-                'Canal': canal.replace('_', ' ').title(),
+                # Pour les taux, on calcule le ratio global
+                clicks_col, impressions_col = col_info
+                clicks = safe_sum(data, clicks_col)
+                impressions = safe_sum(data, impressions_col)
+                value = (clicks / impressions * 100) if impressions > 0 else 0
+            elif metric in ['cout_contact', 'taux_rebond', 'duree_moyenne']:
+                # Pour ces métriques, on utilise la moyenne
+                value = safe_mean(data, col_info)
+            else:
+                # Pour les autres métriques, on utilise la somme
+                value = safe_sum(data, col_info)
+            product_data.append({
+                'Produit': product.replace('_', ' ').title(),
                 'Valeur': value
             })
     
-    if not canal_data:
+    if not product_data:
         st.error("Aucune donnée disponible pour cette métrique")
         return
     
     # Création du graphique
     fig = px.bar(
-        pd.DataFrame(canal_data),
-        x='Canal',
+        pd.DataFrame(product_data),
+        x='Produit',
         y='Valeur',
-        title=f"Comparaison des {metric.replace('_', ' ').title()} par canal",
+        title=f"Comparaison des {metric.replace('_', ' ').title()} par produit",
         labels={'Valeur': metric.replace('_', ' ').title()}
     )
     
@@ -309,5 +405,115 @@ def display_canal_comparison(data: pd.DataFrame, metric: str) -> None:
         title_y=0.95
     )
     
+    # Ajout des valeurs sur les barres avec les unités appropriées
+    if metric in ['ctr', 'taux_conversion', 'taux_rebond']:
+        fig.update_traces(texttemplate='%{y:.1f}%', textposition='outside')
+    elif metric in ['cout_contact']:
+        fig.update_traces(texttemplate='%{y:.2f}€', textposition='outside')
+    elif metric in ['duree_moyenne']:
+        fig.update_traces(texttemplate='%{y:.1f} min', textposition='outside')
+    else:
+        fig.update_traces(texttemplate='%{y:,.0f}', textposition='outside')
+    
     # Affichage du graphique
-    st.plotly_chart(fig, use_container_width=True) 
+    st.plotly_chart(fig, use_container_width=True)
+
+def display_performance_analysis(data: pd.DataFrame) -> None:
+    """Affiche l'analyse des performances par différents critères."""
+    st.header("📊 Analyse des Performances")
+    
+    # Création des onglets pour chaque type d'analyse
+    tab1, tab2, tab3 = st.tabs(["Clients", "Activités", "Localités"])
+    
+    with tab1:
+        st.subheader("Performance par Client")
+        # Préparation des données pour les clients
+        client_performance = data.groupby('Client').agg({
+            'site_score_site_pondéré': 'mean',
+            'google_ads_score_google_ads_pondéré': 'mean',
+            'meta_ads_score_meta_ads_pondéré': 'mean',
+            'gmb_score_gmb_pondéré': 'mean'
+        }).reset_index()
+        
+        # Calcul du score global moyen
+        client_performance['score_global'] = client_performance[[
+            'site_score_site_pondéré', 
+            'google_ads_score_google_ads_pondéré', 
+            'meta_ads_score_meta_ads_pondéré', 
+            'gmb_score_gmb_pondéré'
+        ]].mean(axis=1)
+        
+        # Tri par score global
+        client_performance = client_performance.sort_values('score_global', ascending=False)
+        
+        # Affichage du classement complet
+        st.write("Classement complet des clients par performance :")
+        for i, (_, row) in enumerate(client_performance.iterrows(), 1):
+            st.write(f"{i}. {row['Client']} - Score global : {row['score_global']:.2f}")
+            st.write(f"   - Site : {row['site_score_site_pondéré']:.2f}")
+            st.write(f"   - Google Ads : {row['google_ads_score_google_ads_pondéré']:.2f}")
+            st.write(f"   - Meta Ads : {row['meta_ads_score_meta_ads_pondéré']:.2f}")
+            st.write(f"   - GMB : {row['gmb_score_gmb_pondéré']:.2f}")
+            st.write("---")
+    
+    with tab2:
+        st.subheader("Performance par Activité")
+        # Préparation des données pour les activités
+        activity_performance = data.groupby('Activité').agg({
+            'site_score_site_pondéré': 'mean',
+            'google_ads_score_google_ads_pondéré': 'mean',
+            'meta_ads_score_meta_ads_pondéré': 'mean',
+            'gmb_score_gmb_pondéré': 'mean'
+        }).reset_index()
+        
+        # Calcul du score global moyen
+        activity_performance['score_global'] = activity_performance[[
+            'site_score_site_pondéré', 
+            'google_ads_score_google_ads_pondéré', 
+            'meta_ads_score_meta_ads_pondéré', 
+            'gmb_score_gmb_pondéré'
+        ]].mean(axis=1)
+        
+        # Tri par score global
+        activity_performance = activity_performance.sort_values('score_global', ascending=False)
+        
+        # Affichage du classement complet
+        st.write("Classement complet des activités par performance :")
+        for i, (_, row) in enumerate(activity_performance.iterrows(), 1):
+            st.write(f"{i}. {row['Activité']} - Score global : {row['score_global']:.2f}")
+            st.write(f"   - Site : {row['site_score_site_pondéré']:.2f}")
+            st.write(f"   - Google Ads : {row['google_ads_score_google_ads_pondéré']:.2f}")
+            st.write(f"   - Meta Ads : {row['meta_ads_score_meta_ads_pondéré']:.2f}")
+            st.write(f"   - GMB : {row['gmb_score_gmb_pondéré']:.2f}")
+            st.write("---")
+    
+    with tab3:
+        st.subheader("Performance par Localité")
+        # Préparation des données pour les localités
+        locality_performance = data.groupby('Localité').agg({
+            'site_score_site_pondéré': 'mean',
+            'google_ads_score_google_ads_pondéré': 'mean',
+            'meta_ads_score_meta_ads_pondéré': 'mean',
+            'gmb_score_gmb_pondéré': 'mean'
+        }).reset_index()
+        
+        # Calcul du score global moyen
+        locality_performance['score_global'] = locality_performance[[
+            'site_score_site_pondéré', 
+            'google_ads_score_google_ads_pondéré', 
+            'meta_ads_score_meta_ads_pondéré', 
+            'gmb_score_gmb_pondéré'
+        ]].mean(axis=1)
+        
+        # Tri par score global
+        locality_performance = locality_performance.sort_values('score_global', ascending=False)
+        
+        # Affichage du classement complet
+        st.write("Classement complet des localités par performance :")
+        for i, (_, row) in enumerate(locality_performance.iterrows(), 1):
+            st.write(f"{i}. {row['Localité']} - Score global : {row['score_global']:.2f}")
+            st.write(f"   - Site : {row['site_score_site_pondéré']:.2f}")
+            st.write(f"   - Google Ads : {row['google_ads_score_google_ads_pondéré']:.2f}")
+            st.write(f"   - Meta Ads : {row['meta_ads_score_meta_ads_pondéré']:.2f}")
+            st.write(f"   - GMB : {row['gmb_score_gmb_pondéré']:.2f}")
+            st.write("---") 

@@ -516,4 +516,154 @@ def display_performance_analysis(data: pd.DataFrame) -> None:
             st.write(f"   - Google Ads : {row['google_ads_score_google_ads_pondéré']:.2f}")
             st.write(f"   - Meta Ads : {row['meta_ads_score_meta_ads_pondéré']:.2f}")
             st.write(f"   - GMB : {row['gmb_score_gmb_pondéré']:.2f}")
-            st.write("---") 
+            st.write("---")
+
+def display_financial_metrics(data: pd.DataFrame) -> None:
+    """Affiche les métriques financières (coût par contact et ROI) par produit et global."""
+    st.header("💰 Métriques Financières")
+    
+    # Création des onglets pour chaque type d'analyse
+    tab1, tab2, tab3 = st.tabs(["Par Produit", "Par Client", "Global"])
+    
+    with tab1:
+        st.subheader("Coût par Contact et ROI par Produit")
+        
+        # Calcul des métriques par produit
+        product_metrics = []
+        
+        # Site
+        site_budget = 249 * len(data['date'].unique())  # Budget total sur la période
+        site_contacts = safe_sum(data, 'site_contacts')
+        site_cpc = safe_mean(data, 'site_cout_contact')  # Utilisation directe du coût par contact du site
+        
+        # Google Ads
+        google_budget = safe_sum(data, 'google_ads_budget')
+        google_contacts = safe_sum(data, 'google_ads_contacts')
+        google_cpc = google_budget / google_contacts if google_contacts > 0 else 0
+        
+        # Meta Ads
+        meta_budget = safe_sum(data, 'meta_ads_budget')
+        meta_contacts = safe_sum(data, 'meta_ads_contacts')
+        meta_cpc = meta_budget / meta_contacts if meta_contacts > 0 else 0
+        
+        # GMB
+        gmb_budget = 99 * len(data['date'].unique())  # Budget mensuel de 99€
+        gmb_contacts = safe_sum(data, 'gmb_appels') + safe_sum(data, 'gmb_reservations')  # Somme des appels et réservations
+        gmb_cpc = gmb_budget / gmb_contacts if gmb_contacts > 0 else 0  # Coût par contact = budget total / nombre total de contacts
+        
+        # Ajout des métriques par produit
+        product_metrics.extend([
+            {
+                'Produit': 'Site',
+                'Budget': site_budget,
+                'Contacts': site_contacts,
+                'Coût par Contact': site_cpc
+            },
+            {
+                'Produit': 'Google Ads',
+                'Budget': google_budget,
+                'Contacts': google_contacts,
+                'Coût par Contact': google_cpc
+            },
+            {
+                'Produit': 'Meta Ads',
+                'Budget': meta_budget,
+                'Contacts': meta_contacts,
+                'Coût par Contact': meta_cpc
+            },
+            {
+                'Produit': 'GMB',
+                'Budget': gmb_budget,
+                'Contacts': gmb_contacts,
+                'Coût par Contact': gmb_cpc
+            }
+        ])
+        
+        # Création du DataFrame
+        df_metrics = pd.DataFrame(product_metrics)
+        
+        # Affichage des métriques
+        st.subheader("Coût par Contact")
+        fig_cpc = px.bar(
+            df_metrics,
+            x='Produit',
+            y='Coût par Contact',
+            title="Coût par Contact par Produit",
+            labels={'Coût par Contact': '€'}
+        )
+        fig_cpc.update_traces(texttemplate='%{y:.2f}€', textposition='outside')
+        st.plotly_chart(fig_cpc, use_container_width=True)
+    
+    with tab2:
+        st.subheader("Coût par Contact par Client")
+        
+        # Calcul des métriques par client
+        client_metrics = []
+        
+        for client in data['Client'].unique():
+            client_data = data[data['Client'] == client]
+            
+            # Calcul des métriques pour ce client
+            total_budget = (
+                safe_sum(client_data, 'google_ads_budget') +
+                safe_sum(client_data, 'meta_ads_budget')
+            )
+            
+            total_contacts = (
+                safe_sum(client_data, 'site_contacts') +
+                safe_sum(client_data, 'google_ads_contacts') +
+                safe_sum(client_data, 'meta_ads_contacts') +
+                safe_sum(client_data, 'gmb_appels')
+            )
+            
+            cpc = total_budget / total_contacts if total_contacts > 0 else 0
+            
+            client_metrics.append({
+                'Client': client,
+                'Budget': total_budget,
+                'Contacts': total_contacts,
+                'Coût par Contact': cpc
+            })
+        
+        # Création du DataFrame
+        df_client_metrics = pd.DataFrame(client_metrics)
+        df_client_metrics = df_client_metrics.sort_values('Coût par Contact', ascending=True)
+        
+        # Affichage des métriques
+        st.subheader("Coût par Contact")
+        fig_cpc = px.bar(
+            df_client_metrics,
+            x='Client',
+            y='Coût par Contact',
+            title="Coût par Contact par Client",
+            labels={'Coût par Contact': '€'}
+        )
+        fig_cpc.update_traces(texttemplate='%{y:.2f}€', textposition='outside')
+        st.plotly_chart(fig_cpc, use_container_width=True)
+    
+    with tab3:
+        st.subheader("Métriques Financières Globales")
+        
+        # Calcul des métriques globales
+        total_budget = (
+            safe_sum(data, 'google_ads_budget') +
+            safe_sum(data, 'meta_ads_budget')
+        )
+        
+        total_contacts = (
+            safe_sum(data, 'site_contacts') +
+            safe_sum(data, 'google_ads_contacts') +
+            safe_sum(data, 'meta_ads_contacts') +
+            safe_sum(data, 'gmb_appels')
+        )
+        
+        global_cpc = total_budget / total_contacts if total_contacts > 0 else 0
+        
+        # Affichage des métriques globales
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Budget Total", format_currency(total_budget))
+        
+        with col2:
+            st.metric("Coût par Contact Global", format_currency(global_cpc)) 

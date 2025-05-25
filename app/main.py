@@ -11,7 +11,8 @@ from components.visualizations import (
     format_currency,
     format_percentage,
     clean_numeric_value,
-    display_performance_analysis
+    display_performance_analysis,
+    display_financial_metrics
 )
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
@@ -96,22 +97,14 @@ if activite_selectionnee != "Tous":
 if localite_selectionnee != "Tous":
     data_filtree = data_filtree[data_filtree['Localité'] == localite_selectionnee]
 
-# Affichage des KPIs par canal
-if canal_selectionne in ["Tous", "Site"]:
-    st.header("📱 Site Internet")
-    display_site_kpis(data_filtree)
+# Affichage des KPIs
+display_site_kpis(data_filtree)
+display_google_ads_kpis(data_filtree)
+display_meta_ads_kpis(data_filtree)
+display_gmb_kpis(data_filtree)
 
-if canal_selectionne in ["Tous", "Google Ads"]:
-    st.header("🔍 Google Ads")
-    display_google_ads_kpis(data_filtree)
-
-if canal_selectionne in ["Tous", "Meta Ads"]:
-    st.header("📘 Meta Ads")
-    display_meta_ads_kpis(data_filtree)
-
-if canal_selectionne in ["Tous", "GMB"]:
-    st.header("📍 Google My Business")
-    display_gmb_kpis(data_filtree)
+# Affichage des métriques financières
+display_financial_metrics(data_filtree)
 
 # Affichage de l'analyse de performance
 display_performance_analysis(data_filtree)

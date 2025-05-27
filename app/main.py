@@ -16,6 +16,7 @@ from components.visualizations import (
 )
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
+from utils.ai_analyzer import AIAnalyzer
 
 # Configuration de la page
 st.set_page_config(
@@ -23,6 +24,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# Initialisation de l'analyseur IA
+ai_analyzer = AIAnalyzer()
 
 # Titre de l'application
 st.title("📊 Dashboard Marketing")
@@ -96,6 +100,41 @@ if activite_selectionnee != "Tous":
     data_filtree = data_filtree[data_filtree['Activité'] == activite_selectionnee]
 if localite_selectionnee != "Tous":
     data_filtree = data_filtree[data_filtree['Localité'] == localite_selectionnee]
+
+# Section d'analyse IA
+st.header("🤖 Analyse IA")
+st.write("Posez une question sur vos données marketing et obtenez une analyse détaillée.")
+
+# Initialisation de la session pour stocker la dernière analyse
+if 'last_analysis' not in st.session_state:
+    st.session_state.last_analysis = None
+if 'last_query' not in st.session_state:
+    st.session_state.last_query = None
+
+# Zone de texte pour la question
+user_query = st.text_area(
+    "Votre question",
+    placeholder="Exemple : Quel canal a le meilleur ROI ? Quelles sont les tendances des contacts par canal ?",
+    value=st.session_state.last_query if st.session_state.last_query else ""
+)
+
+# Bouton pour lancer l'analyse
+if st.button("Lancer l'analyse", type="primary"):
+    if user_query:
+        with st.spinner("Analyse en cours..."):
+            # Utiliser les données complètes si aucun client n'est sélectionné
+            data_to_analyze = data if not client_search else data_filtree
+            analysis = ai_analyzer.analyze_data(data_to_analyze, user_query)
+            # Stocker l'analyse et la question dans la session
+            st.session_state.last_analysis = analysis
+            st.session_state.last_query = user_query
+            st.write(analysis)
+    else:
+        st.warning("Veuillez entrer une question avant de lancer l'analyse.")
+
+# Afficher la dernière analyse si elle existe
+elif st.session_state.last_analysis:
+    st.write(st.session_state.last_analysis)
 
 # Affichage des KPIs
 display_site_kpis(data_filtree)
